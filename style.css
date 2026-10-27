@@ -1,0 +1,173 @@
+(function() {
+        /* ---- Hero forest ---- */
+        var forest=document.getElementById('forest'), lostEl=document.getElementById('lost'), savedEl=document.getElementById('saved');
+        var N=window.innerWidth<600?14:26, trees=[], lost=0, saved=0;
+        var greens=['#2e6a43', '#3b7d4f', '#4f9157', '#6fae57'];
+
+        for(var i=0; i<N; i++) {
+            var b=document.createElement('button'); b.className='tree'; b.type='button';
+            var h=70+Math.round(Math.random()*30), g=greens[i%greens.length];
+            b.setAttribute('aria-label', 'Tree, standing');
+            b.innerHTML='<svg viewBox="0 0 40 100" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g class="crown"><polygon points="20,' +(100-h)+' 36,' +(100-h*0.45)+' 4,' +(100-h*0.45)+'" fill="' +g+'"/><polygon points="20,' +(100-h*0.75)+' 38,' +(100-h*0.15)+' 2,' +(100-h*0.15)+'" fill="' +g+'"/></g><rect x="17" y="84" width="6" height="16" fill="#5b4330"/></svg>';
+
+            b.addEventListener('click', (function(el) {
+                        return function() {
+                            if(el.classList.contains('cut')) {
+                                el.classList.remove('cut'); el.setAttribute('aria-label', 'Tree, standing'); saved++; savedEl.textContent=saved;
+                            }
+                        }
+                    })(b));
+            forest.appendChild(b); trees.push(b);
+        }
+
+        var start=Date.now();
+
+        function tick() {
+            var standing=trees.filter(function(t) {
+                    return !t.classList.contains('cut')
+                });
+
+            if(standing.length) {
+                var t=standing[Math.floor(Math.random()*standing.length)]; t.classList.add('cut'); t.setAttribute('aria-label', 'Cleared stump, select to replant');
+            }
+
+            lost++; lostEl.textContent=lost;
+        }
+
+        setInterval(tick, 2500);
+
+        /* ---- Wildlife tabs ---- */
+        var species=[ {
+            n:'Bornean orangutan', s:'Critically endangered', a:'Borneo’s rainforests', t:'Orangutans spend nearly their whole lives in the canopy and need large, connected stretches of forest to find fruit year-round.', w:'Palm oil and timber plantations have replaced much of their habitat. Choosing certified products helps.', k:'Lives in the canopy'
+        }
+
+        ,
+        {
+        n:'Jaguar', s:'Near threatened', a:'Amazon and Central America', t:'The largest cat in the Americas hunts across huge territories. Roads and pasture cut those territories into fragments.', w:'Wildlife corridors let jaguars travel safely between forest patches.', k:'Needs wide territory'
+    }
+
+    ,
+    {
+    n:'Bengal tiger', s:'Endangered', a:'Forests of South Asia', t:'Tigers need dense cover and plenty of prey. Protected forests with enough deer and wild boar are the foundation of their recovery.', w:'Protected reserves and community-led conservation have helped some populations grow.', k:'Depends on prey-rich forest'
+}
+
+,
+{
+n:'African forest elephant', s:'Critically endangered', a:'Congo Basin', t:'Forest elephants spread the seeds of hundreds of tree species, so they are often called the gardeners of the forest.', w:'Fewer elephants means fewer new trees, which slows the forest’s own recovery.', k:'Plants new trees'
+}
+
+];
+var tabs=document.getElementById('tabs'), panel=document.getElementById('panel');
+
+function show(i) {
+    var x=species[i];
+
+    Array.prototype.forEach.call(tabs.children, function(b, j) {
+            b.setAttribute('aria-selected', j===i)
+        });
+    panel.innerHTML='<div><span class="status">' +x.s+'</span><h3>' +x.n+'</h3><p><b>Home:</b> ' +x.a+'</p><p>' +x.t+'</p><p>' +x.w+'</p></div><div class="art"><div><span>' +x.k+'</span><small>' +x.n+'</small></div></div>';
+}
+
+species.forEach(function(x, i) {
+        var b=document.createElement('button'); b.type='button'; b.setAttribute('role', 'tab'); b.textContent=x.n;
+
+        b.addEventListener('click', function() {
+                show(i)
+            }); tabs.appendChild(b);
+    });
+show(0);
+
+/* ---- Drivers & solutions ---- */
+var drivers=[ {
+    n:'Cattle ranching and pasture', v:80, t:'Buy less beef from deforestation-linked supply chains and support zero-deforestation sourcing.'
+}
+
+,
+{
+n:'Crops such as soy and palm oil', v:70, t:'Choose RSPO or FSC-certified products and ask brands to publish their sourcing.'
+}
+
+,
+{
+n:'Logging and wood products', v:60, t:'Look for FSC labels on paper and furniture, and use recycled paper where you can.'
+}
+
+,
+{
+n:'Fires, mining and roads', v:50, t:'Support stronger land protection for Indigenous territories, which often have lower deforestation rates.'
+}
+
+];
+var bars=document.getElementById('bars');
+
+drivers.forEach(function(d) {
+        var el=document.createElement('div'); el.className='bar';
+        el.innerHTML='<label><span>' +d.n+'</span><span>' +d.v+'%</span></label><div class="track"><div class="fill" data-w="' +d.v+'"></div></div><p class="note" style="margin:.4rem 0 0">' +d.t+'</p>';
+        bars.appendChild(el);
+    });
+var fills=bars.querySelectorAll('.fill');
+
+function grow() {
+    fills.forEach(function(f) {
+            f.style.width=f.dataset.w+'%'
+        })
+}
+
+if('IntersectionObserver' in window) {
+    new IntersectionObserver(function(e, o) {
+            if(e[0].isIntersecting) {
+                grow(); o.disconnect()
+            }
+        }
+
+        , {
+        threshold:.3
+    }).observe(bars);
+}
+
+else grow();
+
+/* ---- Action checklist ---- */
+var actions=[ ['Choose certified products', 'Look for FSC on wood and paper and RSPO on palm oil.'],
+['Eat more plants, waste less food', 'Farming drives most deforestation, so every meal not wasted helps.'],
+['Go paperless and recycle', 'Use digital notes, and recycle paper so fewer trees are cut.'],
+['Plant a native tree', 'Plant locally suited species at home, school or in a community drive.'],
+['Back forest protectors', 'Donate to or volunteer with groups that protect forests and Indigenous land rights.'],
+['Tell someone what you learned', 'Share this page. Awareness is how protection laws and company policies change.']];
+var KEY='standing-ground-actions', done=[];
+
+try {
+    done=JSON.parse(localStorage.getItem(KEY)||'[]')||[]
+}
+
+catch(e) {
+    done=[]
+}
+
+var list=document.getElementById('list'), pfill=document.getElementById('pfill'), pbar=document.getElementById('pbar'), msg=document.getElementById('msg');
+
+function update() {
+    var p=Math.round(done.length/actions.length*100);
+    pfill.style.width=p+'%'; pbar.setAttribute('aria-valuenow', p);
+    msg.textContent=done.length===0?'Pick your first action.':done.length===actions.length?'You committed to all six. Thank you for standing with the forests.':done.length+' of ' +actions.length+' commitments made. Keep going.';
+
+    try {
+        localStorage.setItem(KEY, JSON.stringify(done))
+    }
+
+    catch(e) {}
+}
+
+actions.forEach(function(a, i) {
+        var li=document.createElement('li');
+        li.innerHTML='<label><input type="checkbox"' +(done.indexOf(i)>-1?' checked':'')+'><div><b>' +a[0]+'</b><span>' +a[1]+'</span></div></label>';
+
+        li.querySelector('input').addEventListener('change', function(e) {
+                var k=done.indexOf(i);
+                if(e.target.checked&&k<0)done.push(i); else if( !e.target.checked&&k>-1)done.splice(k, 1);
+                update();
+            });
+        list.appendChild(li);
+    });
+update();
+})();
